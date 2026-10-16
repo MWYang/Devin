@@ -98,6 +98,11 @@ can be anyone; in production this header comes from the SSO gateway and the app 
 app writes to it except `audit.record`, and tampering is detected by `verify`, not prevented; a production deployment
 would ship entries to WORM storage.
 
+## Write-ups
+
+- [`docs/key_decisions.md`](docs/key_decisions.md): key decisions one-pager (scope, architecture, tradeoffs).
+- [`docs/presentation.html`](docs/presentation.html): the 5-minute build-vs-buy deck. It is a single offline HTML file; download it and open it in a browser (arrow keys to navigate, F for full screen).
+
 ## Layout
 
 ```
@@ -109,6 +114,7 @@ app/seed.py        demo users / roles / records
 static/            dashboard (plain JS, no build step)
 schema/            one YAML file per governed table
 tests/             policy tests
+docs/              key decisions one-pager and presentation
 ```
 
 ## What this prototype deliberately does not do
