@@ -10,6 +10,7 @@ columns:
   - {name: card_last4, type: string, classification: restricted}
   - {name: status, type: choice, choices: [requested, approved, denied, paid], default: requested}
   - {name: approved_by, type: user}
+  - {name: ticket_url, type: string}
 rules:
   - {type: four_eyes, when: {status: approved}, stamp: approved_by}
   # Refunds above the threshold cannot be self-approved and require the approver role.

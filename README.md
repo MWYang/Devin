@@ -71,6 +71,31 @@ Save this in the **App schema editor** (or drop the file in `schema/` and restar
 A custom UI (React, Retool, anything else) can be built on top of `/api/data/vendor_payments` and gets the same governance.
 In practice this is a good unit of work to hand to Devin: *"add a vendor payments app, finance can create, finance_lead approves over $10k."*
 
+## Red-team check: is RBAC enforced on the server?
+
+The UI hides what you can't see, but the test that matters is calling the API directly. `scripts/attack.sh` fires ~30
+attacks at a running server (IDOR by record id, filtering on masked columns to infer values, mass assignment of
+`team`/`owner_id`/`created_by`, SQL in filters and column names, self-granting roles, rewriting schemas, reading or
+editing the audit log, identity spoofing) and expects each one to be refused:
+
+```bash
+scripts/attack.sh            # against http://localhost:8000; prints BLOCKED/HOLE per attempt and the audit entries
+```
+
+Every refusal is also a `denied` entry in the hash-chained audit log and a `DENIED actor=... reason=...` line in the
+server log, so attempts are visible, not silent. `tests/test_adversarial.py` pins each probe as a regression test.
+
+**What the first red-team pass found.** The first version of this prototype handled a POST containing a system column
+(`{"team": "finance", ...}`) with a 500 error: the insert never happened, but the attempt wasn't logged as a denial,
+and PATCH silently dropped `team`/`owner_id` instead of refusing. Both now return 403 and are audited
+(`cannot write system column team`). Everything else held on the first pass.
+
+**Known gaps, by design of the demo, not fixed.** Identity is the `X-User-Id` header, so anyone who can reach the API
+can be anyone; in production this header comes from the SSO gateway and the app must only trust it from there.
+`/api/users` is unauthenticated (it feeds the demo user switcher). The audit log is append-only because nothing in the
+app writes to it except `audit.record`, and tampering is detected by `verify`, not prevented; a production deployment
+would ship entries to WORM storage.
+
 ## Layout
 
 ```

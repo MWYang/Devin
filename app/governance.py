@@ -11,6 +11,7 @@ All data access goes through `DataService`, so no caller can bypass policy.
 from __future__ import annotations
 
 import json
+import logging
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 
@@ -63,6 +64,14 @@ class Effective:
             "tables": {t: {p: self.scope(t, p) for p in PRIVILEGES} for t in tables},
             "fields": {f"{t.name}.{c.name}": self.field_level(t, c.name) for t in tables.values() for c in t.columns},
         }
+
+
+log = logging.getLogger("governance")
+if not log.handlers:  # uvicorn only configures its own loggers; make denials visible in the server log
+    _h = logging.StreamHandler()
+    _h.setFormatter(logging.Formatter("%(levelname)s:  [%(name)s] %(message)s"))
+    log.addHandler(_h)
+    log.setLevel(logging.INFO)
 
 
 def _max(order, a, b):
@@ -240,6 +249,8 @@ class DataService:
 
     def _deny(self, user: User, reason: str, table: str | None = None, record_id=None):
         audit.record(self.conn, user.id, "denied", table, record_id, {"reason": reason})
+        where = f"{table}#{record_id}" if record_id is not None else (table or "-")
+        log.warning("DENIED actor=%s roles=%s target=%s reason=%r (audited)", user.id, ",".join(user.roles), where, reason)
         raise Forbidden(reason)
 
     @staticmethod
@@ -306,6 +317,14 @@ class DataService:
             audit.record(self.conn, user.id, "read_sensitive", table.name, record_id, {"fields": revealed})
         return self._project(table, eff, row)
 
+    def _check_keys(self, user: User, table: Table, values: dict, record_id=None):
+        """Reject mass assignment: system columns are never client-writable, unknown columns are a 422."""
+        for key in values:
+            if key in SYSTEM_COLUMNS:
+                self._deny(user, f"cannot write system column {key}", table.name, record_id)
+            if table.column(key) is None:
+                raise ValidationError(f"unknown column {key!r}")
+
     def _check_field_writes(self, user: User, table: Table, eff: Effective, values: dict, record_id=None):
         for key in values:
             if eff.field_level(table, key) != "write":
@@ -332,6 +351,7 @@ class DataService:
         table, eff = self._table(table_name), self.effective(user)
         if eff.scope(table.name, "create") == "none":
             self._deny(user, f"no create access to {table.name}", table.name)
+        self._check_keys(user, table, values)
         self._check_field_writes(user, table, eff, values)
         clean = validate(table, values, creating=True)
         self._apply_rules(user, table, eff, {"created_by": user.id}, clean)
@@ -348,7 +368,7 @@ class DataService:
         before = self._fetch(table, record_id)
         if not self._in_scope(eff.scope(table.name, "update"), user, before):
             self._deny(user, f"no update access to {table.name}#{record_id}", table.name, record_id)
-        values = {k: v for k, v in values.items() if k not in SYSTEM_COLUMNS}
+        self._check_keys(user, table, values, record_id)
         clean = validate(table, values, creating=False)
         clean = {k: v for k, v in clean.items() if before.get(k) != v}
         self._check_field_writes(user, table, eff, clean, record_id)
