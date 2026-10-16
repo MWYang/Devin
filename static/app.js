@@ -51,7 +51,7 @@ function renderNav() {
   const link = (href, label) => `<a href="${href}" class="${h === href ? "active" : ""}">${esc(label)}</a>`;
   $("#nav").innerHTML = `<h4>Home</h4>${link("#/", "Overview")}<h4>Apps</h4>` +
     state.tables.map((t) => link(`#/app/${t.name}`, t.label)).join("") +
-    `<h4>Administration</h4>${link("#/roles", "Role editor")}${link("#/governance", "Data governance")}`;
+    `<h4>Administration</h4>${link("#/roles", "Role editor")}${link("#/governance", "Data governance")}${link("#/schema", "App schema editor")}`;
 }
 
 async function route() {
@@ -61,6 +61,7 @@ async function route() {
     if (h.startsWith("#/app/")) await renderApp(h.slice(6));
     else if (h === "#/roles") await renderRoles();
     else if (h === "#/governance") await renderGovernance();
+    else if (h === "#/schema") await renderSchemaEditor();
     else await renderHome();
   } catch (e) {
     $("#main").innerHTML = `<div class="notice">${esc(e.message)}</div>`;
@@ -306,6 +307,68 @@ async function renderGovernance(filters = {}) {
     const r = await api("GET", "/api/audit/verify");
     $("#verify-result").innerHTML = r.ok ? `<span class="ok">✓ Chain intact · ${r.entries} entries · head ${r.head.slice(0, 12)}…</span>`
       : `<span class="bad">✗ Chain broken at entry #${r.broken_at}</span>`;
+  };
+}
+
+// ---------------- schema editor ----------------
+const NEW_APP_TEMPLATE = `name: vendor_payments
+label: Vendor Payments
+description: Outgoing payments to vendors; finance_lead approves large ones.
+display_field: vendor
+columns:
+  - {name: vendor, type: string, required: true}
+  - {name: amount_usd, type: decimal, required: true, min: 0, classification: financial}
+  - {name: iban, type: string, classification: restricted}
+  - {name: status, type: choice, choices: [draft, approved, sent], default: draft}
+  - {name: approved_by, type: user}
+rules:
+  - {type: four_eyes, when: {status: approved}, stamp: approved_by}
+`;
+let selectedSchema = null;
+async function renderSchemaEditor() {
+  if (!state.me.effective.capabilities.includes("manage_schema")) {
+    $("#main").innerHTML = `<h1>App schema editor</h1><div class="notice">You need the <code>manage_schema</code> capability.
+      Switch to <b>Grace Lee</b> (Governance Admin) in the top bar.</div>`;
+    return;
+  }
+  if (!selectedSchema || (selectedSchema !== "__new" && !state.tables.find((t) => t.name === selectedSchema))) selectedSchema = state.tables[0]?.name || "__new";
+  const yaml = selectedSchema === "__new" ? NEW_APP_TEMPLATE : (await api("GET", `/api/schema/${selectedSchema}`)).yaml;
+  $("#main").innerHTML = `<h1>App schema editor</h1>
+    <p class="desc">Each app is one YAML document: columns with types and classifications, plus approval rules. Saving writes the file,
+    adds new columns to the live database and makes the app available immediately. Changes are additive only (no removing or retyping columns),
+    and a new app is deny-by-default until a role grants access in the role editor.</p>
+    <div class="split">
+      <div class="list card">${state.tables.map((t) => `<a data-schema="${t.name}" class="${t.name === selectedSchema ? "active" : ""}">${esc(t.label)}</a>`).join("")}
+        <a data-schema="__new" class="${selectedSchema === "__new" ? "active" : ""}">+ New app</a></div>
+      <div class="detail">
+        <div class="card"><textarea id="yaml" class="mono" style="width:100%;min-height:380px;white-space:pre;font-size:12.5px">${esc(yaml)}</textarea>
+          <div class="toolbar"><button id="validate-btn">Validate</button><button class="primary" id="save-schema">Save &amp; apply</button>
+            <span class="small">Types: string, text, date, integer, decimal, boolean, choice, user · Classifications: internal, pii, financial, restricted</span></div>
+          <div id="schema-result"></div></div>
+      </div>
+    </div>`;
+  document.querySelectorAll("[data-schema]").forEach((a) => a.onclick = () => { selectedSchema = a.dataset.schema; renderSchemaEditor(); });
+  const showPreview = (t) => {
+    $("#schema-result").innerHTML = `<div class="notice" style="background:#f0fdf4;border-color:#bbf7d0;color:#166534">
+      ${t.is_new ? "New app" : "Existing app"} <b>${esc(t.label)}</b> (<code>${esc(t.name)}</code>) is valid${t.added_columns.length ? ` · adds column(s): ${t.added_columns.map(esc).join(", ")}` : ""}.</div>
+      <table><thead><tr><th>Column</th><th>Type</th><th>Classification</th><th>Default access</th><th>Constraints</th></tr></thead>
+      <tbody>${t.columns.map((c) => `<tr><td class="mono">${esc(c.name)}</td><td>${esc(c.type)}</td><td>${chip(c.classification, c.classification)}</td>
+        <td>${c.type === "user" ? '<span class="small">system-stamped</span>' : chip(state.meta.default_field_level[c.classification], "lvl-" + state.meta.default_field_level[c.classification])}</td>
+        <td class="small">${[c.required && "required", c.choices && `choices: ${c.choices.join("/")}`, c.min != null && `min ${c.min}`, c.max != null && `max ${c.max}`, c.default != null && `default ${c.default}`].filter(Boolean).join(", ")}</td></tr>`).join("")}</tbody></table>
+      ${t.rules.length ? `<p class="small">${t.rules.map(describeRule).join("<br>")}</p>` : ""}`;
+  };
+  const showError = (e) => { $("#schema-result").innerHTML = `<div class="notice">${esc(e.message)}</div>`; };
+  $("#validate-btn").onclick = async () => {
+    try { showPreview(await api("POST", "/api/schema/validate", { yaml: $("#yaml").value })); } catch (e) { showError(e); }
+  };
+  $("#save-schema").onclick = async () => {
+    try {
+      const preview = await api("POST", "/api/schema/validate", { yaml: $("#yaml").value });
+      const saved = await api("PUT", `/api/schema/${encodeURIComponent(preview.name)}`, { yaml: $("#yaml").value });
+      await loadMe(); selectedSchema = saved.name; renderNav();
+      toast(saved.is_new ? `App "${saved.label}" created. Grant access in the role editor.` : `Schema for ${saved.name} saved`);
+      renderSchemaEditor().then(() => showPreview(saved));
+    } catch (e) { showError(e); toast(e.message, true); }
   };
 }
 

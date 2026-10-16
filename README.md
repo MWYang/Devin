@@ -20,6 +20,7 @@ The client's three existing Power Apps (KYC review queue, refunds dashboard, fea
 | Auditing | Every write, every **denied attempt** and every **read of unmasked sensitive data** is logged. The log is hash-chained, so editing a past entry is detectable, and restricted values are redacted from it. |
 | Admin center | A **role editor** (scopes, column access, user assignment) and a **data governance** page (who can see each sensitive column, row access, audit log with integrity check, data catalog). |
 | Model-driven apps | Each table's grid and form are **generated from its schema** and the current user's permissions. |
+| Maker / table designer | An **app schema editor** page (capability `manage_schema`) edits or creates the YAML in the browser with validation and a column preview. Saving applies additive migrations live, with no restart, and is audited. Removing or retyping columns is rejected. |
 
 All data access goes through one class, `DataService` ([`app/governance.py`](app/governance.py)). The HTTP API and the UI
 can't get around it, and the UI only displays what the server already decided.
@@ -47,7 +48,8 @@ Use the **Acting as** dropdown in the top bar to switch users. It stands in for 
 3. **Alice** creates a case, then tries to set it to `approved` → *Denied: four-eyes rule*. **Bob** approves it → `approved_by = bob` is filled in automatically.
 4. **Henry (finance analyst)** tries to approve the $1,250 refund → *Denied: requires finance_lead*. **Erin** can approve it.
 5. **Grace (governance admin)** → Role editor. She grants *Support Agent* `read` on `kyc_cases.ssn_last4`. Switch to Dave and the SSN column now appears. Grace herself still has **no data access**, and she can't give herself new roles.
-6. **Grace** → Data governance. The "who can see" matrix reflects the change. The audit log shows the role change, Alice's denied attempt and Dave's sensitive read. **Verify integrity** confirms the chain is intact.
+6. **Grace** → App schema editor. Pick *Refunds Dashboard*, add `- {name: ticket_url, type: string}` under `columns`, save. Open the refunds app: the column is there. Choose **+ New app**, save the vendor-payments template: a new app appears in the nav, and nobody can read it until a role is granted.
+7. **Grace** → Data governance. The "who can see" matrix reflects the change. The audit log shows the role change, Alice's denied attempt and Dave's sensitive read. **Verify integrity** confirms the chain is intact.
 
 ## Adding a new internal app
 
@@ -65,7 +67,7 @@ rules:
   - {type: four_eyes, when: {status: approved}, stamp: approved_by}
 ```
 
-Restart the server. The table, API and UI now exist, and **nobody has access** until a role grants it in the role editor.
+Save this in the **App schema editor** (or drop the file in `schema/` and restart). The table, API and UI now exist, and **nobody has access** until a role grants it in the role editor.
 A custom UI (React, Retool, anything else) can be built on top of `/api/data/vendor_payments` and gets the same governance.
 In practice this is a good unit of work to hand to Devin: *"add a vendor payments app, finance can create, finance_lead approves over $10k."*
 

@@ -21,7 +21,8 @@ ROOT = Path(__file__).resolve().parent.parent
 def create_app(db_path: str | None = None, schema_dir: Path | None = None, with_seed: bool = True) -> FastAPI:
     conn = sqlite3.connect(db_path or os.environ.get("DATAGOV_DB", str(ROOT / "data.db")), check_same_thread=False)
     conn.row_factory = sqlite3.Row
-    tables = load_schemas(schema_dir or ROOT / "schema")
+    schema_dir = schema_dir or ROOT / "schema"
+    tables = load_schemas(schema_dir)
     ensure_tables(conn, tables)
     svc = DataService(conn, tables)
     svc.init_meta()
@@ -95,6 +96,22 @@ def create_app(db_path: str | None = None, schema_dir: Path | None = None, with_
     async def put_user_roles(user_id: str, roles: list[str] = Body(...), user: User = Depends(current_user)):
         svc.set_user_roles(user, user_id, roles)
         return svc.get_user(user_id).__dict__
+
+    @app.get("/api/schema/{name}")
+    async def get_schema(name: str, user: User = Depends(current_user)):
+        svc._require_cap(user, "manage_schema")
+        path = schema_dir / f"{name}.yaml"
+        if name not in tables or not path.exists():
+            raise NotFound(f"no schema {name}")
+        return {"name": name, "yaml": path.read_text()}
+
+    @app.post("/api/schema/validate")
+    async def validate_schema(body: dict = Body(...), user: User = Depends(current_user)):
+        return svc.preview_schema(user, body.get("yaml", ""))
+
+    @app.put("/api/schema/{name}")
+    async def put_schema(name: str, body: dict = Body(...), user: User = Depends(current_user)):
+        return svc.save_schema(user, name, body.get("yaml", ""), schema_dir)
 
     @app.get("/api/governance/matrix")
     async def matrix(user: User = Depends(current_user)):

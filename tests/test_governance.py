@@ -164,3 +164,46 @@ def test_new_schema_file_becomes_governed_table_with_default_deny(tmp_path, sche
     assert "ticket_url" in c.get("/api/data/refunds", headers=h("erin")).json()[0]
     cols = {r[1] for r in sqlite3.connect(db).execute("PRAGMA table_info(refunds)")}
     assert "ticket_url" in cols
+
+
+# ---------- schema editor ----------
+NEW_APP = """name: vendor_payments
+label: Vendor Payments
+columns:
+  - {name: vendor, type: string, required: true}
+  - {name: iban, type: string, classification: restricted}
+  - {name: status, type: choice, choices: [draft, approved], default: draft}
+  - {name: approved_by, type: user}
+rules:
+  - {type: four_eyes, when: {status: approved}, stamp: approved_by}
+"""
+
+
+def test_schema_editor_creates_live_app_with_default_deny(as_user, schema_dir):
+    assert as_user("carol", "PUT", "/api/schema/vendor_payments", json={"yaml": NEW_APP}).status_code == 403
+    r = as_user("grace", "PUT", "/api/schema/vendor_payments", json={"yaml": NEW_APP})
+    assert r.status_code == 200 and r.json()["is_new"] and (schema_dir / "vendor_payments.yaml").exists()
+    assert "vendor_payments" in [t["name"] for t in as_user("alice", "GET", "/api/tables").json()]
+    assert as_user("grace", "GET", "/api/data/vendor_payments").status_code == 403  # creator gets nothing for free
+    as_user("grace", "PUT", "/api/roles/vendor_clerk", json={"permissions": {"tables": {"vendor_payments": {"create": "team", "read": "team", "update": "team"}}}})
+    as_user("grace", "PUT", "/api/users/henry/roles", json=["finance_analyst", "vendor_clerk"])
+    assert as_user("henry", "POST", "/api/data/vendor_payments", json={"vendor": "Acme", "iban": "DE89"}).status_code == 403  # restricted
+    created = as_user("henry", "POST", "/api/data/vendor_payments", json={"vendor": "Acme Paper"})
+    assert created.status_code == 201 and "iban" not in created.json()  # restricted -> hidden by default
+    assert as_user("henry", "PATCH", f"/api/data/vendor_payments/{created.json()['id']}", json={"status": "approved"}).status_code == 403
+    assert as_user("grace", "GET", "/api/audit", params={"action": "schema_create"}).json()[0]["record_id"] is None
+
+
+def test_schema_edits_are_additive_only(as_user):
+    yaml_text = as_user("grace", "GET", "/api/schema/feature_flags").json()["yaml"]
+    plus = yaml_text.replace("columns:\n", "columns:\n  - {name: owner_team, type: string}\n")
+    r = as_user("grace", "POST", "/api/schema/validate", json={"yaml": plus})
+    assert r.status_code == 200 and r.json()["added_columns"] == ["owner_team"]
+    assert as_user("grace", "PUT", "/api/schema/feature_flags", json={"yaml": plus}).status_code == 200
+    assert "owner_team" in as_user("frank", "GET", "/api/data/feature_flags").json()[0]
+    minus = yaml_text.replace("  - {name: description, type: text}\n", "")
+    assert as_user("grace", "PUT", "/api/schema/feature_flags", json={"yaml": minus}).status_code == 422
+    retyped = yaml_text.replace("{name: rollout_percent, type: integer", "{name: rollout_percent, type: string")
+    assert as_user("grace", "PUT", "/api/schema/feature_flags", json={"yaml": retyped}).status_code == 422
+    assert as_user("grace", "PUT", "/api/schema/feature_flags", json={"yaml": "name: [broken"}).status_code == 422
+    assert as_user("grace", "PUT", "/api/schema/other_name", json={"yaml": yaml_text}).status_code == 422

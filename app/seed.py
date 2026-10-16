@@ -40,7 +40,7 @@ ROLES = [
     {"id": "platform_engineer", "name": "Platform Engineer", "description": "Manages feature flags.",
      "permissions": {"tables": {"feature_flags": ALL}}},
     {"id": "governance_admin", "name": "Governance Admin", "description": "Manages roles and reviews audit. No data access by default.",
-     "permissions": {"tables": {}}, "capabilities": ["manage_roles", "view_audit"]},
+     "permissions": {"tables": {}}, "capabilities": ["manage_roles", "view_audit", "manage_schema"]},
 ]
 
 KYC = [

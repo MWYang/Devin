@@ -91,6 +91,19 @@ def parse_table(raw: dict) -> Table:
                  display_field=raw.get("display_field"), columns=cols, rules=raw.get("rules", []))
 
 
+def check_compatible(old: Table | None, new: Table) -> list[str]:
+    """Only additive changes are allowed: a column can be added, never removed or retyped."""
+    if old is None:
+        return [c.name for c in new.columns]
+    for c in old.columns:
+        n = new.column(c.name)
+        if n is None:
+            raise ValidationError(f"column {c.name!r} cannot be removed (existing data would be lost)")
+        if n.type != c.type:
+            raise ValidationError(f"column {c.name!r} cannot change type {c.type} -> {n.type}")
+    return [c.name for c in new.columns if old.column(c.name) is None]
+
+
 def load_schemas(directory: Path) -> dict[str, Table]:
     tables = {}
     for path in sorted(directory.glob("*.yaml")):

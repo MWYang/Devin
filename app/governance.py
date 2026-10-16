@@ -15,12 +15,12 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 
 from . import audit
-from .schema import SYSTEM_COLUMNS, Table, ValidationError, validate
+from .schema import SYSTEM_COLUMNS, Table, ValidationError, check_compatible, ensure_tables, parse_table, validate
 
 SCOPES = ("none", "own", "team", "all")
 PRIVILEGES = ("create", "read", "update", "delete")
 FIELD_LEVELS = ("hidden", "masked", "read", "write")
-CAPABILITIES = ("manage_roles", "view_audit")
+CAPABILITIES = ("manage_roles", "view_audit", "manage_schema")
 DEFAULT_FIELD_LEVEL = {"internal": "write", "pii": "masked", "financial": "masked", "restricted": "hidden"}
 
 
@@ -196,6 +196,41 @@ class DataService:
         self.conn.execute("UPDATE users SET roles = ? WHERE id = ?", (json.dumps(sorted(roles)), target_id))
         audit.record(self.conn, user.id, "user_roles_update", "users", target_id,
                      {"before": target.roles, "after": sorted(roles)})
+
+    # ---------- schema administration ----------
+    def preview_schema(self, user: User, yaml_text: str) -> dict:
+        self._require_cap(user, "manage_schema")
+        table = self._parse_yaml(yaml_text)
+        added = check_compatible(self.tables.get(table.name), table)
+        return table.to_dict() | {"is_new": table.name not in self.tables, "added_columns": added}
+
+    def save_schema(self, user: User, name: str, yaml_text: str, schema_dir) -> dict:
+        self._require_cap(user, "manage_schema")
+        table = self._parse_yaml(yaml_text)
+        if table.name != name:
+            raise ValidationError(f"schema name {table.name!r} does not match {name!r}")
+        is_new = name not in self.tables
+        added = check_compatible(self.tables.get(name), table)
+        (schema_dir / f"{name}.yaml").write_text(yaml_text if yaml_text.endswith("\n") else yaml_text + "\n")
+        ensure_tables(self.conn, {name: table})
+        self.tables[name] = table  # hot reload: shared dict, so the API and UI see it on the next request
+        audit.record(self.conn, user.id, "schema_create" if is_new else "schema_update", name, None,
+                     {"added_columns": added, "columns": [c.name for c in table.columns]})
+        return table.to_dict() | {"is_new": is_new, "added_columns": added}
+
+    @staticmethod
+    def _parse_yaml(yaml_text: str) -> Table:
+        import yaml
+        try:
+            raw = yaml.safe_load(yaml_text)
+        except yaml.YAMLError as e:
+            raise ValidationError(f"YAML syntax: {e}")
+        if not isinstance(raw, dict):
+            raise ValidationError("schema must be a YAML mapping with name/label/columns")
+        try:
+            return parse_table(raw)
+        except (ValueError, TypeError) as e:
+            raise ValidationError(str(e))
 
     # ---------- data access ----------
     def _table(self, name: str) -> Table:
