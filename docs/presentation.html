@@ -1,0 +1,409 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cognition Interview Screen · Michael Yang</title>
+<style>
+:root{
+  --ink:#0f172a; --ink-2:#334155; --muted:#64748b; --line:#e2e8f0; --soft:#f1f5f9; --paper:#ffffff;
+  --accent:#4f46e5; --accent-soft:#eef2ff; --go:#047857; --go-soft:#ecfdf5; --warn:#b45309; --warn-soft:#fffbeb;
+  --stop:#b91c1c; --stop-soft:#fef2f2; --night:#0b1020;
+  --sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:#1e2433;font-family:var(--sans);color:var(--ink);-webkit-font-smoothing:antialiased}
+#viewport{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;overflow:hidden}
+#stage{width:1280px;height:720px;position:relative;transform-origin:center center;flex:none}
+.slide{position:absolute;inset:0;background:var(--paper);padding:56px 72px 64px;display:none;flex-direction:column;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.35)}
+.slide.active{display:flex}
+.slide.dark{background:var(--night);color:#e2e8f0}
+.slide.dark .kicker{color:#a5b4fc}
+.kicker{font-size:13px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);margin-bottom:10px}
+h1{font-size:56px;line-height:1.05;letter-spacing:-.02em;font-weight:700}
+h2{font-size:34px;line-height:1.15;letter-spacing:-.015em;font-weight:700;max-width:1080px}
+h3{font-size:17px;font-weight:650;margin-bottom:8px}
+p,li{font-size:17px;line-height:1.5;color:var(--ink-2)}
+.dark p,.dark li{color:#cbd5e1}
+.lead{font-size:20px;color:var(--muted);margin-top:12px;max-width:1000px}
+.body{flex:1;display:flex;flex-direction:column;justify-content:center;margin-top:26px;min-height:0}
+.foot{position:absolute;left:72px;right:72px;bottom:22px;display:flex;justify-content:space-between;font-size:11.5px;color:var(--muted)}
+.dark .foot{color:#64748b}
+.cols{display:grid;gap:28px}
+.c2{grid-template-columns:1fr 1fr}.c3{grid-template-columns:repeat(3,1fr)}.c4{grid-template-columns:repeat(4,1fr)}
+.c-6-4{grid-template-columns:1.5fr 1fr}
+ul.clean{list-style:none}
+ul.clean li{padding-left:18px;position:relative;margin-bottom:8px}
+ul.clean li::before{content:"";position:absolute;left:0;top:.62em;width:7px;height:7px;border-radius:2px;background:var(--accent)}
+.card{border:1px solid var(--line);border-radius:12px;padding:20px 22px;background:var(--paper)}
+.card.tint{background:var(--soft);border-color:transparent}
+.card.go{background:var(--go-soft);border-color:#a7f3d0}
+.card.warn{background:var(--warn-soft);border-color:#fde68a}
+.card.stop{background:var(--stop-soft);border-color:#fecaca}
+.card.acc{background:var(--accent-soft);border-color:#c7d2fe}
+.card p,.card li{font-size:15px}
+.tag{display:inline-block;font-size:11.5px;font-weight:650;letter-spacing:.04em;text-transform:uppercase;padding:3px 8px;border-radius:999px;margin-bottom:10px}
+.tag.go{background:#d1fae5;color:var(--go)}.tag.warn{background:#fef3c7;color:var(--warn)}.tag.stop{background:#fee2e2;color:var(--stop)}.tag.acc{background:#e0e7ff;color:var(--accent)}
+.big{font-size:44px;font-weight:700;letter-spacing:-.02em;line-height:1;color:var(--ink)}
+.big small{font-size:18px;font-weight:600;color:var(--muted);letter-spacing:0}
+.label{font-size:13px;color:var(--muted);margin-top:8px;line-height:1.4}
+.num{font-variant-numeric:tabular-nums}
+table.t{width:100%;border-collapse:collapse;font-size:14.5px}
+table.t th{text-align:left;font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);font-weight:650;padding:8px 10px;border-bottom:1.5px solid var(--ink)}
+table.t td{padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top;color:var(--ink-2);line-height:1.4}
+table.t td:first-child{font-weight:600;color:var(--ink)}
+table.t td.r,table.t th.r{text-align:right}
+.math{font-family:var(--mono);font-size:14.5px;line-height:1.75;color:var(--ink-2)}
+.math b{color:var(--ink)}
+.callout{border-left:4px solid var(--accent);background:var(--accent-soft);padding:14px 18px;border-radius:0 10px 10px 0;font-size:17px;line-height:1.45;color:var(--ink)}
+.callout.warn{border-color:var(--warn);background:var(--warn-soft)}
+.callout.go{border-color:var(--go);background:var(--go-soft)}
+.shot{border:1px solid var(--line);border-radius:10px;overflow:hidden;box-shadow:0 6px 24px rgba(15,23,42,.10);background:#fff}
+.shot img{display:block;width:100%}
+.cap{font-size:13.5px;color:var(--muted);margin-top:10px;line-height:1.4}
+.cap b{color:var(--ink)}
+code,.mono{font-family:var(--mono);font-size:.88em}
+pre{font-family:var(--mono);font-size:13px;line-height:1.55;background:var(--night);color:#e2e8f0;padding:16px 18px;border-radius:10px;white-space:pre}
+pre .k{color:#a5b4fc}pre .s{color:#86efac}pre .c{color:#64748b}
+.bar-row{display:grid;grid-template-columns:270px 1fr 120px;align-items:center;gap:16px;margin-bottom:16px}
+.bar-row .name{font-size:15px;font-weight:600;line-height:1.3}
+.bar-row .name span{display:block;font-weight:400;font-size:12.5px;color:var(--muted)}
+.track{height:30px;background:var(--soft);border-radius:6px;position:relative;overflow:hidden}
+.fill{position:absolute;left:0;top:0;bottom:0;border-radius:6px}
+.fill.range{opacity:.35}
+.val{font-size:16px;font-weight:700;text-align:right}
+.step{display:grid;grid-template-columns:44px 1fr;gap:14px;margin-bottom:16px}
+.step .n{width:36px;height:36px;border-radius:50%;background:var(--accent);color:#fff;font-weight:700;display:flex;align-items:center;justify-content:center;font-size:15px}
+.step.alt .n{background:var(--ink-2)}
+.step h3{margin-bottom:3px}
+.step p{font-size:15px}
+.tight .step{margin-bottom:10px}.tight .step p{font-size:14px}.tight .pill{font-size:12px;padding:3px 9px}.tight .card{padding-top:16px;padding-bottom:16px}
+.quad{display:grid;grid-template-columns:150px 1fr 1fr;grid-template-rows:auto 1fr 1fr;gap:12px;flex:1;min-height:0}
+.quad .axis{font-size:12px;font-weight:650;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);display:flex;align-items:flex-end;padding:0 4px 2px}
+.quad .axis.y{align-items:center}
+.quad .cell{border-radius:12px;padding:18px 20px;border:1px solid var(--line)}
+.quad .cell h3{font-size:18px}
+.quad .cell p{font-size:14.5px;margin-bottom:6px}
+.quad .cell .verdict{font-weight:700;font-size:15px;margin-top:6px}
+.pill-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.pill{font-size:12.5px;padding:4px 10px;border-radius:999px;background:var(--soft);color:var(--ink-2);border:1px solid var(--line)}
+.rank{display:grid;grid-template-columns:34px 1fr;gap:12px;padding:11px 0;border-bottom:1px solid var(--line)}
+.rank:last-child{border-bottom:0}
+.rank .i{font-weight:700;color:var(--accent);font-size:20px;line-height:1.2}
+.rank h3{margin-bottom:2px;font-size:16.5px}
+.rank p{font-size:14.5px}
+.title-wrap{flex:1;display:flex;flex-direction:column;justify-content:center}
+.title-wrap h1{color:#fff;max-width:1000px}
+.title-wrap .lead{color:#94a3b8;font-size:22px;max-width:900px}
+.rule{height:3px;width:72px;background:var(--accent);margin:28px 0}
+.muted{color:var(--muted)}
+.strong{color:var(--ink);font-weight:650}
+/* chrome */
+#hud{position:fixed;bottom:14px;right:14px;display:flex;gap:8px;align-items:center;background:rgba(15,23,42,.72);backdrop-filter:blur(6px);color:#e2e8f0;border-radius:999px;padding:6px 8px;font-size:13px;z-index:10;opacity:0;transition:opacity .3s}
+#hud:hover,#hud:focus-within,#hud.show{opacity:1}
+#hud button{background:transparent;border:0;color:#e2e8f0;font:inherit;width:30px;height:30px;border-radius:50%;cursor:pointer}
+#hud button:hover,#hud button:focus-visible{background:rgba(255,255,255,.14);outline:none}
+#count{min-width:64px;text-align:center;font-variant-numeric:tabular-nums}
+#progress{position:fixed;left:0;top:0;height:3px;background:var(--accent);z-index:10;transition:width .2s}
+@media print{
+  @page{size:1280px 720px;margin:0}
+  html,body{background:#fff}
+  #viewport{position:static;display:block}
+  #stage{transform:none!important;width:auto;height:auto}
+  .slide{display:flex!important;position:relative;width:1280px;height:720px;box-shadow:none;page-break-after:always;break-after:page}
+  #hud,#progress{display:none}
+  *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
+
+.stat{font-size:52px;font-weight:700;letter-spacing:-.02em;line-height:1}
+.stat-l{font-size:15px;color:var(--muted);margin-top:6px;line-height:1.35}
+.demo{display:flex;align-items:center;gap:14px;background:var(--night);color:#e2e8f0;border-radius:12px;padding:14px 20px;font-size:16px}
+.demo b{color:#fff}.demo .dot{width:10px;height:10px;border-radius:50%;background:#f43f5e;flex:none;box-shadow:0 0 0 4px rgba(244,63,94,.25)}
+.mini .bar-row{grid-template-columns:190px 1fr 104px;margin-bottom:14px}.mini .val{white-space:nowrap}
+.mini .track{height:24px}
+.col-h{font-size:13px;font-weight:650;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
+.chain{display:flex;flex-direction:column;gap:14px}
+.chain .step{margin-bottom:0}
+.chain .step h3{font-size:17.5px}
+.chain .step p{font-size:15.5px}
+.so{font-size:13px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--accent);margin:22px 0 10px}
+.eq{display:grid;grid-template-columns:1fr 28px 1fr 28px 1fr;gap:10px;align-items:stretch}
+.eq .box{background:var(--soft);border-radius:12px;padding:14px 18px}
+.eq .box.hl{background:var(--warn-soft);border:1px solid #fde68a}
+.eq .lab{font-size:12px;font-weight:650;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.eq .f{font-size:21px;font-weight:600;color:var(--ink-2);font-variant-numeric:tabular-nums;white-space:nowrap}
+.eq .f b{color:var(--ink);font-size:26px}
+.eq .box.hl .f b{color:var(--warn)}
+.eq .why{font-size:13.5px;color:var(--muted);margin-top:6px;line-height:1.4}
+.eq .op{align-self:center;text-align:center;font-size:22px;color:var(--muted)}
+.tgrid{flex:1;display:grid;grid-template-columns:1.25fr 1fr;gap:56px;align-items:center}
+.tgrid h1{color:#fff}
+.tgrid .lead{color:#94a3b8;font-size:20px}
+.receipt{background:#f8fafc;color:var(--ink);border-radius:6px;padding:24px 26px 20px;font-family:var(--mono);font-size:14.5px;box-shadow:0 24px 60px rgba(0,0,0,.45);position:relative}
+.receipt .hd{font-family:var(--sans);font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);text-align:center;margin-bottom:14px}
+.receipt .ln{display:flex;justify-content:space-between;padding:5px 0;font-variant-numeric:tabular-nums}
+.receipt .ln.sum{border-top:1.5px dashed #94a3b8;margin-top:6px;padding-top:10px;font-weight:700}
+.receipt .ln.q{color:var(--warn);font-weight:700;font-size:16px}
+.receipt .ft{font-family:var(--sans);font-size:12.5px;color:var(--muted);text-align:center;margin-top:14px}
+</style>
+</head>
+<body>
+<div id="progress"></div>
+<div id="viewport"><div id="stage">
+<section class="slide dark" data-title="Title">
+  <div class="tgrid" style="grid-template-columns:1.2fr 1fr">
+    <div>
+      <h1 style="font-size:54px">Cognition Interview Screen</h1>
+      <div class="rule"></div>
+      <p class="lead" style="font-size:24px;color:#cbd5e1">Michael Yang</p>
+    </div>
+    <div style="justify-self:end;width:380px"><svg style="width:100%;height:auto;display:block;color:#fff" viewBox="0 0 112 24" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Cognition"><path d="M37.7773 14.8781C37.7986 14.7928 37.8626 14.7715 37.9265 14.7715H39.8021C39.866 14.7715 39.9087 14.7928 39.9087 14.8781C39.9087 16.2851 38.2249 19.6748 33.7705 19.6748C29.0816 19.6748 27.0355 16.477 27.0355 11.9575C27.0355 7.43789 29.5078 4.24009 33.7705 4.24009C38.4167 4.24009 39.9087 7.86426 39.9087 9.03679C39.9087 9.12207 39.866 9.14339 39.8021 9.14339H37.9265C37.8626 9.14339 37.7986 9.10075 37.7773 9.03679C37.4576 8.12009 36.5838 6.05218 33.7705 6.05218C30.7866 6.05218 29.1668 8.26932 29.1668 11.9575C29.1668 15.6456 30.7866 17.8627 33.7705 17.8627C36.328 17.8627 37.4363 16.008 37.7773 14.8781Z" fill="currentColor"></path><path d="M51.1782 14.068C51.1782 17.3937 49.2174 19.6748 45.8925 19.6748C42.5463 19.6748 40.6068 17.3937 40.6068 14.068C40.6068 10.721 42.5463 8.46119 45.8925 8.46119C49.2174 8.46119 51.1782 10.7423 51.1782 14.068ZM49.1534 14.068C49.1534 11.8509 47.9386 10.2733 45.8925 10.2733C43.8677 10.2733 42.6316 11.8509 42.6316 14.068C42.6316 16.2852 43.8677 17.8627 45.8925 17.8627C47.9386 17.8627 49.1534 16.2852 49.1534 14.068Z" fill="currentColor"></path><path d="M54.468 20.7194C54.6386 21.2098 55.4058 22.0838 57.1748 22.0838C59.4127 22.0838 60.2013 20.5489 60.2013 19.0566V18.481C60.2013 18.3957 60.0734 18.3104 59.9882 18.4383C59.7537 18.7368 58.4323 19.6748 56.9404 19.6748C54.0418 19.6748 51.8678 17.3937 51.8678 14.068C51.8678 10.7423 53.8287 8.46119 56.9404 8.46119C58.006 8.46119 59.3914 9.05811 59.9882 9.65504C60.0521 9.71899 60.1587 9.76163 60.2013 9.63372L60.4144 8.78097C60.4357 8.71701 60.4571 8.67438 60.521 8.67438H62.1195C62.1834 8.67438 62.226 8.71701 62.226 8.78097V19.0566C62.226 21.9346 60.18 23.8959 57.1748 23.8959C54.5533 23.8959 52.5712 22.4249 52.4007 20.7194C52.4007 20.6555 52.4433 20.6128 52.5072 20.6128H54.3615C54.4254 20.6128 54.4467 20.6555 54.468 20.7194ZM53.8926 14.068C53.8926 16.2852 55.1074 17.8627 57.1535 17.8627C59.093 17.8627 60.2013 16.2852 60.2013 14.068C60.2013 11.8509 59.093 10.2733 57.1535 10.2733C55.1074 10.2733 53.8926 11.8509 53.8926 14.068Z" fill="currentColor"></path><path d="M64.42 8.67438H66.0185C66.0824 8.67438 66.1037 8.71701 66.125 8.78097L66.3382 9.74031C66.3595 9.86822 66.53 9.82558 66.5726 9.76163C66.9989 9.12207 67.9367 8.46119 69.3646 8.46119C72.4551 8.46119 74.0109 10.721 74.0109 13.4924V19.355C74.0109 19.419 73.9683 19.4616 73.9043 19.4616H72.0927C72.0288 19.4616 71.9862 19.419 71.9862 19.355V13.4924C71.9862 11.8722 71.2615 10.2733 69.1515 10.2733C67.3612 10.2733 66.3382 11.8295 66.3382 13.4924V19.355C66.3382 19.419 66.2955 19.4616 66.2316 19.4616H64.42C64.356 19.4616 64.3134 19.419 64.3134 19.355V8.78097C64.3134 8.71701 64.356 8.67438 64.42 8.67438Z" fill="currentColor"></path><path d="M78.1612 8.78097V19.355C78.1612 19.419 78.1185 19.4616 78.0546 19.4616H76.243C76.179 19.4616 76.1364 19.419 76.1364 19.355V8.78097C76.1364 8.71701 76.179 8.67438 76.243 8.67438H78.0546C78.1185 8.67438 78.1612 8.71701 78.1612 8.78097ZM78.2038 7.3313H76.0725C76.0085 7.3313 75.9659 7.28866 75.9659 7.22471V5.07152C75.9659 5.00756 76.0085 4.96492 76.0725 4.96492H78.2038C78.2677 4.96492 78.3103 5.00756 78.3103 5.07152V7.22471C78.3103 7.28866 78.2677 7.3313 78.2038 7.3313Z" fill="currentColor"></path><path d="M85.3472 17.7561V19.355C85.3472 19.419 85.3046 19.4616 85.2406 19.4616H83.5995C81.8305 19.4616 80.8075 18.6942 80.8075 16.946V10.3799C80.8075 10.3159 80.7649 10.2733 80.7009 10.2733H78.804C78.7401 10.2733 78.6975 10.2306 78.6975 10.1667V8.78097C78.6975 8.71701 78.7401 8.67438 78.804 8.67438H80.7009C80.7649 8.67438 80.8075 8.63174 80.8075 8.56778V5.68976C80.8075 5.6258 80.8501 5.58317 80.9141 5.58317H82.7257C82.7896 5.58317 82.8322 5.6258 82.8322 5.68976V8.56778C82.8322 8.63174 82.8749 8.67438 82.9388 8.67438H85.2406C85.3046 8.67438 85.3472 8.71701 85.3472 8.78097V10.1667C85.3472 10.2306 85.3046 10.2733 85.2406 10.2733H82.9388C82.8749 10.2733 82.8322 10.3159 82.8322 10.3799V16.5836C82.8322 17.2445 83.1306 17.6495 83.9831 17.6495H85.2406C85.3046 17.6495 85.3472 17.6922 85.3472 17.7561Z" fill="currentColor"></path><path d="M88.7362 8.78097V19.355C88.7362 19.419 88.6935 19.4616 88.6296 19.4616H86.818C86.754 19.4616 86.7114 19.419 86.7114 19.355V8.78097C86.7114 8.71701 86.754 8.67438 86.818 8.67438H88.6296C88.6935 8.67438 88.7362 8.71701 88.7362 8.78097ZM88.7788 7.3313H86.6475C86.5835 7.3313 86.5409 7.28866 86.5409 7.22471V5.07152C86.5409 5.00756 86.5835 4.96492 86.6475 4.96492H88.7788C88.8427 4.96492 88.8854 5.00756 88.8854 5.07152V7.22471C88.8854 7.28866 88.8427 7.3313 88.7788 7.3313Z" fill="currentColor"></path><path d="M100.803 14.068C100.803 17.3937 98.8421 19.6748 95.5172 19.6748C92.1711 19.6748 90.2316 17.3937 90.2316 14.068C90.2316 10.721 92.1711 8.46119 95.5172 8.46119C98.8421 8.46119 100.803 10.7423 100.803 14.068ZM98.7782 14.068C98.7782 11.8509 97.5633 10.2733 95.5172 10.2733C93.4925 10.2733 92.2563 11.8509 92.2563 14.068C92.2563 16.2852 93.4925 17.8627 95.5172 17.8627C97.5633 17.8627 98.7782 16.2852 98.7782 14.068Z" fill="currentColor"></path><path d="M102.409 8.67438H104.008C104.071 8.67438 104.093 8.71701 104.114 8.78097L104.327 9.74031C104.349 9.86822 104.519 9.82558 104.562 9.76163C104.988 9.12207 105.926 8.46119 107.354 8.46119C110.444 8.46119 112 10.721 112 13.4924V19.355C112 19.419 111.957 19.4616 111.893 19.4616H110.082C110.018 19.4616 109.975 19.419 109.975 19.355V13.4924C109.975 11.8722 109.251 10.2733 107.141 10.2733C105.35 10.2733 104.327 11.8295 104.327 13.4924V19.355C104.327 19.419 104.285 19.4616 104.221 19.4616H102.409C102.345 19.4616 102.302 19.419 102.302 19.355V8.78097C102.302 8.71701 102.345 8.67438 102.409 8.67438Z" fill="currentColor"></path><path d="M14.493 10.5887C14.9972 10.2989 15.6205 10.2989 16.1247 10.5887L17.4277 11.3413C17.4693 11.3646 17.5145 11.3829 17.5603 11.3956C17.5695 11.3991 17.5786 11.4013 17.5892 11.4027C17.6343 11.4133 17.6802 11.4189 17.7253 11.421H17.7323C17.738 11.421 17.7415 11.421 17.7472 11.4189C17.7888 11.4189 17.8304 11.4118 17.872 11.4027C17.879 11.4027 17.8868 11.4006 17.8938 11.397C17.9375 11.3843 17.9806 11.366 18.0207 11.3448C18.0243 11.3427 18.0299 11.3413 18.0334 11.3392L20.6382 9.83407C20.825 9.72687 20.9392 9.52797 20.9392 9.31215V6.30261C20.9392 6.08678 20.825 5.88718 20.6382 5.78068L18.0334 4.27556C17.8466 4.16835 17.6167 4.16835 17.4299 4.27556L14.8251 5.78068C14.8251 5.78068 14.8181 5.78632 14.8146 5.78774C14.7751 5.81101 14.7363 5.84063 14.7038 5.87308C14.6982 5.87872 14.6947 5.88366 14.689 5.8893C14.6601 5.92033 14.6347 5.95489 14.6115 5.99086C14.6079 5.99651 14.6044 6.00144 14.6009 6.0092C14.579 6.0494 14.5607 6.09102 14.548 6.13616C14.5445 6.14533 14.5424 6.15449 14.541 6.16507C14.5304 6.21021 14.5226 6.25747 14.5226 6.30684V7.81196C14.5226 8.39243 14.211 8.9341 13.7068 9.22398C13.2026 9.51386 12.5793 9.51386 12.0751 9.22398L10.7721 8.47142C10.7305 8.44815 10.6853 8.42981 10.6395 8.41711C10.6303 8.41359 10.6212 8.41147 10.6106 8.41006C10.5655 8.39948 10.5196 8.39384 10.4745 8.39172H10.4548C10.4111 8.39172 10.3695 8.39878 10.3279 8.40794C10.3208 8.40794 10.313 8.41006 10.3081 8.41147C10.263 8.42417 10.2214 8.44251 10.1791 8.46437C10.1755 8.46649 10.1699 8.4679 10.1664 8.47001L7.56165 9.97513C7.3748 10.0823 7.26057 10.2812 7.26057 10.4971V13.5066C7.26057 13.7224 7.3748 13.922 7.56165 14.0285L10.1664 15.5336C10.1664 15.5336 10.1755 15.5372 10.1791 15.5393C10.2207 15.5612 10.2623 15.5795 10.3081 15.5922C10.3152 15.5943 10.3229 15.5957 10.33 15.5978C10.3716 15.607 10.4132 15.6126 10.4548 15.614C10.4604 15.614 10.4639 15.6162 10.4696 15.6162H10.4766C10.5218 15.6162 10.5676 15.6091 10.6127 15.5978C10.6219 15.5957 10.6311 15.5922 10.6416 15.5908C10.6868 15.5781 10.7305 15.5597 10.7742 15.5365L12.0773 14.7839C12.5814 14.494 13.2048 14.494 13.7082 14.7839C14.2103 15.0738 14.524 15.6162 14.524 16.1966V17.7018C14.524 17.7504 14.5311 17.7977 14.5424 17.8428C14.5445 17.852 14.5459 17.8626 14.5494 17.8717C14.5621 17.9155 14.5804 17.9585 14.6016 17.9987C14.6051 18.0043 14.6087 18.0093 14.6129 18.017C14.6347 18.053 14.6601 18.0876 14.6912 18.1186C14.6968 18.1242 14.7003 18.1292 14.706 18.1348C14.7384 18.1673 14.7765 18.1948 14.8167 18.2202C14.8202 18.2223 14.8237 18.2258 14.8272 18.2272L17.432 19.7323C17.5243 19.7866 17.6294 19.8141 17.7331 19.8141C17.8367 19.8141 17.9418 19.7866 18.0341 19.7323L20.6389 18.2272C20.8257 18.12 20.94 17.9211 20.94 17.7053V14.6957C20.94 14.4799 20.8257 14.2803 20.6389 14.1738L18.0341 12.6687C18.0341 12.6687 18.025 12.6652 18.0215 12.6631C17.9798 12.6412 17.9382 12.6229 17.8931 12.6102C17.8861 12.6087 17.8804 12.6087 17.8734 12.6066C17.8318 12.596 17.7881 12.5904 17.7465 12.5904H17.7267C17.6816 12.5904 17.6365 12.5975 17.5906 12.6087C17.5815 12.6109 17.5723 12.6144 17.5638 12.6158C17.5187 12.6285 17.475 12.6468 17.4313 12.6701L16.1282 13.4227C15.6261 13.7125 15.0007 13.7125 14.4972 13.4227C13.9952 13.1328 13.6814 12.5904 13.6814 12.0099C13.6814 11.4295 13.9931 10.8878 14.4972 10.5972L14.4951 10.5902L14.493 10.5887Z" fill="currentColor"></path><path d="M0.30176 9.83689L2.90648 11.342C2.99886 11.3963 3.10392 11.4238 3.20757 11.4238C3.31123 11.4238 3.41629 11.3963 3.50866 11.342L6.11338 9.83689C6.11338 9.83689 6.12044 9.83125 6.12396 9.82984C6.16415 9.80657 6.20153 9.77694 6.23467 9.7445C6.24031 9.73886 6.24383 9.73392 6.24947 9.72828C6.27838 9.69725 6.30377 9.66268 6.32774 9.62671C6.33127 9.62107 6.33479 9.61613 6.33832 9.60837C6.36018 9.56817 6.37851 9.52656 6.3912 9.48142C6.39473 9.47225 6.39684 9.46308 6.39825 9.4525C6.40883 9.40736 6.41659 9.36011 6.41659 9.31144V7.80632C6.41659 7.22585 6.72825 6.68418 7.23242 6.3943C7.73658 6.10442 8.35991 6.10442 8.86407 6.3943L10.1671 7.14686C10.2087 7.17013 10.2539 7.18847 10.2997 7.20117C10.3089 7.20469 10.318 7.20681 10.3286 7.20822C10.3737 7.2188 10.4175 7.22444 10.4647 7.22656H10.4718C10.4774 7.22656 10.4809 7.22444 10.4866 7.22444C10.5282 7.22444 10.5698 7.21739 10.6114 7.20822C10.6184 7.20822 10.6262 7.20611 10.6332 7.20258C10.6784 7.18988 10.72 7.17155 10.7623 7.14968C10.7658 7.14827 10.7714 7.14616 10.775 7.14404L13.3797 5.63892C13.5665 5.53171 13.6808 5.33281 13.6808 5.11699V2.10745C13.6808 1.89163 13.5665 1.69203 13.3797 1.58553L10.775 0.0804048C10.5881 -0.0268016 10.3582 -0.0268016 10.1714 0.0804048L7.56664 1.58553C7.56664 1.58553 7.55959 1.59117 7.55607 1.59258C7.51658 1.61585 7.4785 1.64548 7.44536 1.67792C7.43972 1.68356 7.4362 1.6885 7.43056 1.69414C7.40165 1.72518 7.37626 1.75974 7.35229 1.79571C7.34876 1.80135 7.34523 1.80629 7.34171 1.81405C7.31985 1.85425 7.30152 1.89586 7.28883 1.941C7.2853 1.95017 7.28318 1.95934 7.28177 1.96992C7.27049 2.01506 7.26344 2.06231 7.26344 2.11168V3.61681C7.26344 4.19727 6.95178 4.73895 6.44761 5.02953C5.94557 5.31941 5.32012 5.31941 4.81596 5.02953L3.51289 4.27697C3.47129 4.2537 3.42616 4.23536 3.38033 4.22266C3.37116 4.21914 3.36199 4.21702 3.35142 4.21561C3.30629 4.20503 3.26046 4.19939 3.21533 4.19727H3.19559C3.15187 4.19727 3.11027 4.20433 3.06866 4.21349C3.06161 4.21349 3.05386 4.21561 3.04892 4.21702C3.00379 4.22972 2.96219 4.24805 2.91988 4.26992C2.91636 4.27203 2.91072 4.27345 2.90719 4.27556L0.302465 5.78068C0.115607 5.88789 0.00137719 6.08679 0.00137719 6.30261V9.31215C0.00137719 9.52797 0.115607 9.72757 0.302465 9.83407L0.30176 9.83689Z" fill="currentColor"></path><path d="M13.3762 18.3583L10.7715 16.8531C10.7715 16.8531 10.7623 16.8496 10.7588 16.8475C10.7172 16.8256 10.6756 16.808 10.6297 16.7953C10.6227 16.7932 10.6149 16.7918 10.6079 16.7897C10.5663 16.7805 10.5247 16.7734 10.481 16.7734H10.4612C10.4161 16.7734 10.3702 16.7805 10.3251 16.7918C10.316 16.7939 10.3068 16.7974 10.2976 16.7988C10.2525 16.8115 10.2088 16.8299 10.1651 16.8531L8.86199 17.6057C8.35994 17.8956 7.7345 17.8956 7.23245 17.6057C6.72829 17.3158 6.41662 16.7734 6.41662 16.193V14.6879C6.41662 14.6392 6.40957 14.5919 6.39829 14.5461C6.39688 14.5369 6.39476 14.5263 6.39124 14.5172C6.37855 14.4734 6.36021 14.4304 6.33835 14.3902C6.33483 14.3846 6.3313 14.3796 6.32778 14.3719C6.30592 14.3359 6.28053 14.3013 6.24951 14.2703C6.24387 14.2647 6.24034 14.2597 6.23541 14.2541C6.20297 14.2216 6.16489 14.1941 6.1247 14.1687C6.12117 14.1666 6.11765 14.1631 6.11412 14.1617L3.5094 12.6566C3.32254 12.5494 3.09267 12.5494 2.90581 12.6566L0.301088 14.1617C0.11423 14.2689 0 14.4678 0 14.6836V17.6932C0 17.909 0.11423 18.1086 0.301088 18.2151L2.90581 19.7202C2.90581 19.7202 2.91498 19.7237 2.9185 19.7258C2.96011 19.7477 3.00171 19.7653 3.04543 19.778C3.05248 19.7802 3.06023 19.7816 3.06729 19.7837C3.10889 19.7929 3.14908 19.7985 3.19209 19.7999C3.19773 19.7999 3.20267 19.8013 3.2069 19.8013H3.21395C3.25908 19.8013 3.30491 19.7943 3.34793 19.783C3.35709 19.7809 3.36767 19.7773 3.37684 19.7759C3.42196 19.7632 3.46568 19.7449 3.5094 19.7216L4.81247 18.9691C5.31663 18.6792 5.93996 18.6792 6.44412 18.9691C6.94617 19.2589 7.25995 19.8013 7.25995 20.3818V21.8869C7.25995 21.9356 7.267 21.9828 7.27828 22.0287C7.2804 22.0378 7.28181 22.0484 7.28533 22.0576C7.29802 22.1013 7.31636 22.1443 7.33822 22.1845C7.34174 22.1902 7.34527 22.1951 7.34879 22.2029C7.37065 22.2389 7.39604 22.2734 7.42706 22.3044C7.4327 22.3101 7.43623 22.315 7.44116 22.3207C7.4736 22.3531 7.51168 22.3806 7.55187 22.406C7.5554 22.4081 7.55892 22.4117 7.56315 22.4131L10.1679 23.9182C10.2602 23.9725 10.3653 24 10.469 24C10.5726 24 10.6777 23.9725 10.7701 23.9182L13.3748 22.4131C13.5616 22.3059 13.6759 22.107 13.6759 21.8911V18.8816C13.6759 18.6658 13.5616 18.4662 13.3748 18.3597L13.3762 18.3583Z" fill="currentColor"></path></svg></div>
+  </div>
+  <div class="foot"><span></span><span></span></div>
+</section>
+
+<section class="slide" data-title="Who the $250K pays for">
+  <h2>Most of the $250K likely pays for outside contractors, not employees</h2>
+  <div class="body" style="margin-top:20px">
+    <div class="eq">
+      <div class="box">
+        <div class="lab">1 · Price of one user</div>
+        <div class="f">$20 × 12 mo = <b>$240</b></div>
+        <div class="why">Microsoft's list price per user, per year</div>
+      </div>
+      <div class="op">→</div>
+      <div class="box">
+        <div class="lab">2 · Users the bill pays for</div>
+        <div class="f">$250K ÷ $240 = <b>~1,040</b></div>
+        <div class="why">Total yearly bill divided by the price of one user</div>
+      </div>
+      <div class="op">→</div>
+      <div class="box hl">
+        <div class="lab">3 · Users who aren't employees</div>
+        <div class="f">1,040 − 250 = <b>~800</b></div>
+        <div class="why">The company has ~200 people. Even a license for all 250 would cost only $60K</div>
+      </div>
+    </div>
+    <p style="margin-top:14px;font-size:16px"><b class="strong">Who are the ~800?</b> The most likely answer is outsourced reviewers who handle identity checks and customer support, each with a license.</p>
+    <div class="so">If so, three things follow</div>
+    <div class="cols c3" style="gap:32px">
+      <div class="card tint"><h3>The bill grows with the contractor team</h3><p>Every new reviewer adds about $240 a year. In a tool the client owns, an extra user costs almost nothing.</p></div>
+      <div class="card tint"><h3>Power Apps' main selling point goes unused</h3><p>Its strength is letting non-engineers build apps. Contractors only use apps; they don't build them.</p></div>
+      <div class="card warn"><h3>Security has to be strict</h3><p>Hundreds of outsiders see customer personal data. Any tool must limit what each person sees and log what they view.</p></div>
+    </div>
+  </div>
+  <div class="foot"><span>This is an assumption. Confirm it by asking for the list of paid users by type (see appendix if it's wrong)</span><span>1</span></div>
+</section>
+
+<section class="slide" data-title="What Devin can rebuild">
+  <h2>The part of Power Apps worth paying for is its security, and Devin can rebuild what this client needs</h2>
+  <div class="body" style="margin-top:20px">
+    <div class="cols" style="grid-template-columns:1.35fr 1fr;gap:40px">
+      <div class="chain">
+        <div class="step"><div class="n">1</div><div><h3>The value is the controls, not the app builder</h3><p>Power Apps decides who can see which records and fields, keeps an activity log, and applies company-wide data rules. Contractors don't use the app builder.</p></div></div>
+        <div class="step"><div class="n">2</div><div><h3>Devin built a working version of those controls</h3><p>Each user sees only the records their role allows. Sensitive fields are masked or hidden. Approvals need a second person. Every change is logged.</p></div></div>
+        <div class="step"><div class="n">3</div><div><h3>New tools are then cheap to add</h3><p>Each new tool reuses the same controls, so it's a short description and a test, not a new project.</p></div></div>
+        <div class="step alt"><div class="n">4</div><div><h3>What's left is running it, which still needs people</h3><p>Hosting, backups, outside security testing, and a named owner, about half of one engineer's time.</p></div></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:16px">
+        <div class="card stop">
+          <span class="tag stop">Not worth rebuilding</span>
+          <ul class="clean">
+            <li>Microsoft's 1,000+ ready-made integrations and its workflow automation</li>
+            <li>The drag-and-drop app builder</li>
+            <li>The feature-flag tool: buy an off-the-shelf product</li>
+          </ul>
+        </div>
+        <div class="demo"><span class="dot"></span><span><b>Live demo:</b> the same review queue seen by two different roles</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>The main risk isn't writing the code. It's that the client becomes responsible for protecting customer data that outsiders can see</span><span>2</span></div>
+</section>
+
+<section class="slide" data-title="Recommendation">
+  <h2>Build with Devin if the data and users sit outside Microsoft, which is likely here</h2>
+  <div class="body" style="margin-top:18px">
+    <div class="cols" style="grid-template-columns:1.3fr 1fr;gap:24px">
+      <div class="card go" style="padding:16px 20px">
+        <span class="tag go">Build with Devin if</span>
+        <ul class="clean">
+          <li>Most users are outside contractors (slide 1)</li>
+          <li>The data lives in the company's own database, not in Microsoft's (Dataverse)</li>
+          <li>The tools are simple: review queues, forms, approvals</li>
+        </ul>
+        <h3 style="font-size:14px;margin:10px 0 6px;color:var(--go)">Why this is likely the case here</h3>
+        <ul class="clean">
+          <li>A ~200-person Series C fintech runs its product on its own database. Power Apps is most likely reading that data, not storing it.</li>
+          <li>Startups at this stage pick simple, fast tools. 3 basic review tools look like a quick fix that grew, not a deep Microsoft commitment.</li>
+        </ul>
+      </div>
+      <div class="card" style="padding:16px 20px;background:var(--soft);border-color:transparent">
+        <span class="tag acc">Stay on Power Apps if</span>
+        <ul class="clean">
+          <li>Most data is stored in Microsoft's database (Dataverse)</li>
+          <li>The tools depend on Microsoft's automation and reporting (Power Automate, Power BI)</li>
+          <li>Most users are employees who build their own tools</li>
+          <li>No engineer can own a custom system</li>
+        </ul>
+      </div>
+    </div>
+    <div class="mini" style="margin-top:16px">
+      <div class="bar-row" style="grid-template-columns:230px 1fr 150px"><div class="name">Power Apps today</div><div class="track"><div class="fill" style="width:100%;background:var(--ink-2)"></div></div><div class="val num">$250K/yr</div></div>
+      <div class="bar-row" style="grid-template-columns:230px 1fr 150px;margin-bottom:0"><div class="name">Build with Devin, ongoing<span>Devin ~$12K + half an engineer $100K + hosting ~$20K</span></div><div class="track"><div class="fill" style="width:52%;background:var(--go)"></div></div><div class="val num">~$130K/yr</div></div>
+    </div>
+  </div>
+  <div class="foot"><span>Plus ~$100–150K one-time to build and switch over. Contractor time saved by faster screens is extra upside, not counted. Devin: Teams plan, devin.ai/pricing</span><span>3</span></div>
+</section>
+
+
+<section class="slide" data-title="Next steps">
+  <h2 style="font-size:30px">Devin can help replace Power Apps or build on Power Apps</h2>
+  <div class="body" style="margin-top:20px">
+    <div class="cols c2" style="gap:28px">
+      <div class="card">
+        <span class="tag go">Build with Devin</span>
+        <div class="step"><div class="n">1</div><div><h3>Weeks 2–6: make it production-ready</h3><p>Company sign-in, database protections, security testing.</p></div></div>
+        <div class="step"><div class="n">2</div><div><h3>Weeks 6–10: pilot with one reviewer team</h3><p>Run beside Power Apps and measure time per case.</p></div></div>
+        <div class="step" style="margin-bottom:0"><div class="n">3</div><div><h3>Expand one tool at a time</h3><p>Cancel licenses as each team moves over.</p></div></div>
+        <p class="cap"><b>Devin</b> (Teams plan, ~3 engineer seats) builds the system and each tool, moves the data, and keeps it up to date.</p>
+      </div>
+      <div class="card">
+        <span class="tag acc">Buy Power Apps</span>
+        <div class="step alt"><div class="n">1</div><div><h3>Lock down personal data</h3><p>Turn on Power Apps' built-in field protections.</p></div></div>
+        <div class="step alt"><div class="n">2</div><div><h3>Devin writes the tools as code</h3><p>Power Apps also accepts code: custom screens, components and database logic. Devin writes these like any other software.</p></div></div>
+        <div class="step alt" style="margin-bottom:0"><div class="n">3</div><div><h3>Devin tests and ships every change</h3><p>Tools are saved as files, reviewed, tested, and released with Microsoft's own command-line tools.</p></div></div>
+        <p class="cap"><b>Why it helps:</b> the drag-and-drop builder needs a person clicking, and contractors don't build. Devin lets a small engineering team change tools quickly, while Microsoft still provides the security and audit trail.</p>
+      </div>
+    </div>
+    <div class="callout" style="font-size:15px;margin-top:18px"><b>First step on either path:</b> a two-week check of who the paid users are, where each tool's data is stored, and which Microsoft automations the tools use.</div>
+  </div>
+  <div class="foot"><span></span><span>4</span></div>
+</section>
+
+<section class="slide dark" data-title="Appendix">
+  <div class="title-wrap">
+    <div class="kicker">Appendix</div>
+    <h1>If the assumption is wrong</h1>
+    <div class="rule"></div>
+    <p class="lead">A1 · Four explanations for the $250K, and what each means<br>A2 · Where the numbers come from</p>
+  </div>
+  <div class="foot"><span></span><span></span></div>
+</section>
+
+<section class="slide" data-title="A1 · If the assumption is wrong">
+  <div class="kicker">A1 · If the assumption is wrong</div>
+  <h2>The answer depends on what the $250K buys and who it serves</h2>
+  <div class="body" style="margin-top:20px">
+    <div class="quad">
+      <div></div>
+      <div class="axis">Serves outside contractors</div>
+      <div class="axis">Serves employees</div>
+      <div class="axis y">Mostly<br>licenses</div>
+      <div class="cell" style="background:var(--go-soft);border-color:#a7f3d0">
+        <h3>Contractor licenses <span class="muted" style="font-weight:500;font-size:14px">(our assumption)</span></h3>
+        <p>~800 outsourced reviewers, each with a license. Cost grows with the contractor team.</p>
+        <div class="verdict" style="color:var(--go)">→ Build in stages. Devin builds it.</div>
+      </div>
+      <div class="cell" style="background:var(--soft)">
+        <h3>Too many licenses</h3>
+        <p>Licenses were bought for everyone and never trimmed. Most go unused.</p>
+        <div class="verdict" style="color:var(--accent)">→ Buy, and cancel unused licenses. No need to build.</div>
+      </div>
+      <div class="axis y">Mostly<br>services</div>
+      <div class="cell" style="background:var(--go-soft);border-color:#a7f3d0">
+        <h3>Consultant fees</h3>
+        <p>Much of the bill is a Microsoft consultant building and maintaining the apps.</p>
+        <div class="verdict" style="color:var(--go)">→ Strongest case for Devin: it does the consultant's work, on either platform.</div>
+      </div>
+      <div class="cell" style="background:var(--warn-soft);border-color:#fde68a">
+        <h3>Heavy use of Microsoft extras</h3>
+        <p>Extra data storage, workflow automation and reporting. Other systems depend on them.</p>
+        <div class="verdict" style="color:var(--warn)">→ Buy. Devin builds custom tools inside Power Apps.</div>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>The two-week check (slide 4) tells us which box we're in</span><span>A1</span></div>
+</section>
+
+<section class="slide" data-title="A2 · Where the numbers come from">
+  <div class="kicker">A2 · Where the numbers come from</div>
+  <h2>Every estimate rests on public prices and a few stated assumptions</h2>
+  <div class="body" style="justify-content:flex-start;margin-top:22px">
+    <div class="cols c2" style="gap:36px">
+      <table class="t">
+        <thead><tr><th>Input</th><th class="r">Value</th><th>Basis</th></tr></thead>
+        <tbody>
+          <tr><td>Power Apps price</td><td class="r num" style="white-space:nowrap">$20 → $22 /user/mo</td><td>Microsoft list price; rises Jan 1 2027</td></tr>
+          <tr><td>Devin seat</td><td class="r num" style="white-space:nowrap">$40 /user/mo</td><td>Devin Teams plan list price, devin.ai/pricing</td></tr>
+          <tr><td>Devin extra usage</td><td class="r num">~$10K/yr</td><td>Assumption; billed at API rates past each seat's quota</td></tr>
+          <tr><td>Engineer cost</td><td class="r num">$200K/yr</td><td>Assumption, incl. benefits</td></tr>
+          <tr><td>Contractor reviewer cost</td><td class="r num">$8–15/hr</td><td>Assumption, offshore</td></tr>
+          <tr><td>Time saved per reviewer</td><td class="r num">10 min/day</td><td>Estimate; the pilot measures it</td></tr>
+          <tr><td>Hosting and logging</td><td class="r num">$15–25K/yr</td><td>Assumption</td></tr>
+        </tbody>
+      </table>
+      <div class="math" style="font-size:14px">
+        <b>Paid users</b>: $250,000 ÷ $240 = 1,042<br>
+        <b>Devin, yearly</b>: 3 seats × $40 × 12 = $1.4K<br>
+        &nbsp;&nbsp;+ extra usage ~$10K → <b>~$12K</b><br>
+        <b>Build with Devin, yearly</b>: $12K + ½ × $200K<br>
+        &nbsp;&nbsp;+ hosting $15–25K → <b>$127–137K (~$130K)</b><br>
+        <b>Time saved</b>: 800 × 10 min × 250 days = 33,333 h<br>
+        &nbsp;&nbsp;× $8–15/h → <b>$270–500K</b><br>
+        <b>One-time build</b>: 3 months of one engineer with Devin ($50K)<br>
+        &nbsp;&nbsp;+ data move, overlap licenses, retraining → <b>$100–150K</b>
+        <div class="callout warn" style="margin-top:18px;font-family:var(--sans);font-size:14.5px">Not included: Microsoft's cost for outside users' sign-in accounts, any consultant fees inside the $250K, and Devin Enterprise (custom quote; needed for features like company sign-in and private hosting).</div>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>Prototype: github.com/MWYang/Devin</span><span>A2</span></div>
+</section>
+
+</div></div>
+
+<div id="hud" role="toolbar" aria-label="Slide navigation">
+  <button id="prev" aria-label="Previous slide">&#8592;</button>
+  <span id="count" aria-live="polite"></span>
+  <button id="next" aria-label="Next slide">&#8594;</button>
+  <button id="fs" aria-label="Toggle full screen" title="Full screen (F)"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M1 5V1h4M9 1h4v4M13 9v4H9M5 13H1V9"/></svg></button>
+</div>
+
+<script>
+(function(){
+  const slides=[...document.querySelectorAll('.slide')];
+  const stage=document.getElementById('stage');
+  let i=0;
+  function fit(){const s=Math.min(innerWidth/1280,innerHeight/720)*0.96;stage.style.transform='scale('+s+')';}
+  function show(n){
+    i=Math.max(0,Math.min(slides.length-1,n));
+    slides.forEach((s,k)=>s.classList.toggle('active',k===i));
+    document.getElementById('count').textContent=(i+1)+' / '+slides.length;
+    document.getElementById('progress').style.width=((i+1)/slides.length*100)+'%';
+    try{history.replaceState(null,'','#'+(i+1));}catch(e){}
+  }
+  addEventListener('resize',fit);
+  addEventListener('keydown',e=>{
+    if(['ArrowRight','PageDown',' ','Enter'].includes(e.key)){e.preventDefault();show(i+1);}
+    else if(['ArrowLeft','PageUp','Backspace'].includes(e.key)){e.preventDefault();show(i-1);}
+    else if(e.key==='Home')show(0);
+    else if(e.key==='End')show(slides.length-1);
+    else if(e.key==='f'||e.key==='F'){toggleFs();}
+  });
+  function toggleFs(){if(!document.fullscreenElement){document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen().catch(()=>{});}else{document.exitFullscreen();}}
+  document.getElementById('prev').onclick=()=>show(i-1);
+  document.getElementById('next').onclick=()=>show(i+1);
+  document.getElementById('fs').onclick=toggleFs;
+  let x0=null;
+  addEventListener('touchstart',e=>{x0=e.touches[0].clientX},{passive:true});
+  addEventListener('touchend',e=>{if(x0===null)return;const dx=e.changedTouches[0].clientX-x0;if(Math.abs(dx)>40)show(i+(dx<0?1:-1));x0=null;});
+  const hud=document.getElementById('hud');let ht;
+  addEventListener('mousemove',()=>{hud.classList.add('show');clearTimeout(ht);ht=setTimeout(()=>hud.classList.remove('show'),1800);});
+  fit();
+  const h=parseInt((location.hash||'').slice(1),10);
+  show(isNaN(h)?0:h-1);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,18 @@
+# One YAML file = one governed table. Adding a new internal app starts here.
+name: kyc_cases
+label: KYC Review Queue
+description: Customer identity verification cases awaiting analyst review.
+display_field: customer_name
+columns:
+  - {name: customer_name, type: string, required: true}
+  - {name: email, type: string, classification: pii}
+  - {name: date_of_birth, type: date, classification: pii}
+  - {name: ssn_last4, type: string, classification: restricted}
+  - {name: country, type: string, required: true}
+  - {name: risk_score, type: integer, min: 0, max: 100}
+  - {name: status, type: choice, choices: [pending, in_review, approved, rejected, escalated], default: pending}
+  - {name: reviewer_notes, type: text}
+  - {name: approved_by, type: user}
+rules:
+  # Maker-checker: whoever created the case cannot be the one who approves it.
+  - {type: four_eyes, when: {status: approved}, stamp: approved_by}
