@@ -1,0 +1,16 @@
+name: refunds
+label: Refunds Dashboard
+description: Customer refund requests. Large refunds require a second approver.
+display_field: order_id
+columns:
+  - {name: order_id, type: string, required: true}
+  - {name: customer_email, type: string, classification: pii}
+  - {name: amount_usd, type: decimal, required: true, min: 0, classification: financial}
+  - {name: reason, type: choice, choices: [damaged, not_received, duplicate_charge, fraud, other]}
+  - {name: card_last4, type: string, classification: restricted}
+  - {name: status, type: choice, choices: [requested, approved, denied, paid], default: requested}
+  - {name: approved_by, type: user}
+rules:
+  - {type: four_eyes, when: {status: approved}, stamp: approved_by}
+  # Refunds above the threshold cannot be self-approved and require the approver role.
+  - {type: approval_threshold, when: {status: approved}, field: amount_usd, threshold: 500, approver_role: finance_lead}

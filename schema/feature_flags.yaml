@@ -1,0 +1,10 @@
+name: feature_flags
+label: Feature Flag Admin
+description: Runtime feature flags across environments.
+display_field: key
+columns:
+  - {name: key, type: string, required: true}
+  - {name: description, type: text}
+  - {name: environment, type: choice, choices: [dev, staging, production], required: true}
+  - {name: enabled, type: boolean, default: false}
+  - {name: rollout_percent, type: integer, min: 0, max: 100, default: 0}
