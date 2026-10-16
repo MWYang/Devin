@@ -37,7 +37,7 @@ Or `docker build -t govdata . && docker run -p 8000:8000 govdata`.
 
 The first run seeds demo users, roles and records into `data.db`. Delete that file to reset.
 
-Tests (18 executable policy checks): `.venv/bin/python -m pytest -q`
+Tests (27 executable policy and adversarial checks): `.venv/bin/python -m pytest -q`
 
 ## 5-minute demo script
 
