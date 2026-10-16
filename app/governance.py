@@ -136,6 +136,9 @@ class DataService:
     def get_user(self, user_id: str) -> User:
         r = self.conn.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
         if not r:
+            # An unknown principal is an attack signal too: audit it under the identity that was presented.
+            audit.record(self.conn, str(user_id)[:64], "denied", None, None, {"reason": "unknown user"})
+            log.warning("DENIED actor=%r roles=- target=- reason='unknown user' (audited)", str(user_id)[:64])
             raise Forbidden("unknown user")
         return User(id=r["id"], name=r["name"], team=r["team"], roles=json.loads(r["roles"]), email=r["email"])
 

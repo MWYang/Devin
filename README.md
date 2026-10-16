@@ -88,7 +88,9 @@ server log, so attempts are visible, not silent. `tests/test_adversarial.py` pin
 **What the first red-team pass found.** The first version of this prototype handled a POST containing a system column
 (`{"team": "finance", ...}`) with a 500 error: the insert never happened, but the attempt wasn't logged as a denial,
 and PATCH silently dropped `team`/`owner_id` instead of refusing. Both now return 403 and are audited
-(`cannot write system column team`). Everything else held on the first pass.
+(`cannot write system column team`). The recorded run then found a second gap: a request with an unknown
+`X-User-Id` was refused (403) but left no `denied` audit entry and no server-log warning, so credential-guessing
+would have been invisible. Unknown identities are now audited under the identity presented. Everything else held.
 
 **Known gaps, by design of the demo, not fixed.** Identity is the `X-User-Id` header, so anyone who can reach the API
 can be anyone; in production this header comes from the SSO gateway and the app must only trust it from there.

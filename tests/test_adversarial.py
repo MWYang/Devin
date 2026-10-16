@@ -60,6 +60,9 @@ def test_identity_is_required_and_cannot_be_passed_in_the_query(client):
     assert client.get("/api/data/kyc_cases", params={"as": "carol"}).status_code == 422
     assert client.get("/api/data/kyc_cases", headers={"X-User-Id": "mallory"}).status_code == 403
     assert client.get("/api/data/kyc_cases", headers={"X-User-Id": "Carol"}).status_code == 403
+    # found by the recorded red-team run: unknown identities were refused but not logged
+    entries = client.get("/api/audit", params={"action": "denied", "actor": "mallory"}, headers={"X-User-Id": "grace"}).json()
+    assert [e["details"]["reason"] for e in entries] == ["unknown user"]
 
 
 def test_audit_log_has_no_write_api_and_direct_edits_are_detected(as_user, client):
